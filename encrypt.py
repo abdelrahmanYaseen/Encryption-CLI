@@ -3,17 +3,10 @@ import typer
 import binascii
 from getpass import getpass
 
-def pad(txt):
-    return (16 * (1+ len(txt)//16) - len(txt)) * '`' + txt
-
-def unpad(txt):
-    i = 0
-    for c in txt:
-        if c == '`':
-            i+=1
-        else:
-            break
-    return txt[i:]
+def pad(m):
+    return m+chr(16-len(m)%16)*(16-len(m)%16)
+def unpad(ct):
+    return ct[:-ord(ct[-1])]
 
 app = typer.Typer()
 
