@@ -14,6 +14,16 @@ def pad(m):
 def unpad(ct):
     return ct[:-ord(ct[-1])]
 
+def _read_phrase(phrase_file: Optional[str]) -> str:
+    if phrase_file:
+        p = Path(phrase_file)
+        if not p.exists():
+            typer.echo(f"Error: phrase file not found: {phrase_file}", err=True)
+            raise typer.Exit(1)
+        words = [w.strip() for w in p.read_text().splitlines() if w.strip()]
+        return " ".join(words)
+    return getpass("12-word seed phrase: ")
+
 def _derive_key(phrase: str, strict: bool = True) -> bytes:
     words = phrase.strip().split()
     if len(words) != 12:
@@ -56,6 +66,7 @@ def encrypt_file(
     filepath: str,
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Output path (default: <file>.enc)"),
     no_strict: bool = typer.Option(False, "--no-strict", help="Accept any BIP39 words without checksum validation"),
+    phrase_file: Optional[str] = typer.Option(None, "--phrase-file", "-f", help="Path to txt file with one word per line"),
 ):
     """Encrypt a file using a 12-word BIP39 seed phrase (AES-256-GCM)."""
     src = Path(filepath)
@@ -63,7 +74,7 @@ def encrypt_file(
         typer.echo(f"Error: file not found: {filepath}", err=True)
         raise typer.Exit(1)
 
-    phrase = getpass("12-word seed phrase: ")
+    phrase = _read_phrase(phrase_file)
     key = _derive_key(phrase, strict=not no_strict)
 
     data = src.read_bytes()
@@ -79,6 +90,7 @@ def decrypt_file(
     filepath: str,
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Output path (default: strips .enc or appends .dec)"),
     no_strict: bool = typer.Option(False, "--no-strict", help="Accept any BIP39 words without checksum validation"),
+    phrase_file: Optional[str] = typer.Option(None, "--phrase-file", "-f", help="Path to txt file with one word per line"),
 ):
     """Decrypt a file using a 12-word BIP39 seed phrase (AES-256-GCM)."""
     src = Path(filepath)
@@ -86,7 +98,7 @@ def decrypt_file(
         typer.echo(f"Error: file not found: {filepath}", err=True)
         raise typer.Exit(1)
 
-    phrase = getpass("12-word seed phrase: ")
+    phrase = _read_phrase(phrase_file)
     key = _derive_key(phrase, strict=not no_strict)
 
     raw = src.read_bytes()
